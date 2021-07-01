@@ -1,5 +1,7 @@
 from requests import Session
+import time
 
+from pytest import mark
 
 def test_can_login(logged_in_session):
     resp = logged_in_session.get(
@@ -7,34 +9,47 @@ def test_can_login(logged_in_session):
     )
     assert 'Search By ISBN-10' in resp.text
 
-def test_can_skip_login_using_browser(
-    logged_in_session, browser):
-    # Load cookies into browser session
+@mark.without_browser
+def test_can_login_without_browser(logged_in_session, browser):
+    # Retrieve LSESSION and token from session cookies
     lsession = logged_in_session.cookies.get('LSESSION')
     token = logged_in_session.cookies.get('token')
 
-    # Navigate to landing page (WARNING: You cannot add cookies until 
-    # the path has been set this way! Don't skip this step!)
-    browser.get(url="http://127.0.0.1:5000")
+    # WARNING: You must navigate to the landing page FIRST
+    # or injecting cookies will fail
+    browser.get('http://127.0.0.1:5000')
 
-    # Add the necessary cookies to the browser instance
+    # Inject cookies into browser
     browser.add_cookie(
         {
-            'name': 'LSESSION', 
+            'name': 'LSESSION',
             'value': lsession
         }
     )
+
     browser.add_cookie(
         {
-            'name': 'token', 
+            'name': 'token',
             'value': token
         }
     )
 
-    # Attempt to navigate directly to the search page
-    browser.get(url="http://127.0.0.1:5000/search")
-
-    # Prove that we are logged in successfully
+    browser.get('http://127.0.0.1:5000/search')
+    
     assert 'Search By ISBN-10' in browser.page_source
 
-    import pdb; pdb.set_trace()
+@mark.with_browser
+def test_can_login_using_browser(browser):
+    browser.get('http://127.0.0.1:5000')
+    email_ipt = browser.find_element_by_css_selector('input#email')
+    pw_ipt = browser.find_element_by_css_selector('input#password')
+    submit_btn = browser.find_element_by_css_selector('button[value="Submit"]')
+
+    email_ipt.send_keys('brandon@techstep.com')
+    time.sleep(2)
+
+    pw_ipt.send_keys('1234')
+    time.sleep(2)
+    submit_btn.click()
+    time.sleep(2)
+    assert 'Search By ISBN-10' in browser.page_source

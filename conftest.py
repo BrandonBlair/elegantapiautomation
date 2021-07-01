@@ -3,6 +3,7 @@ from requests import Session
 
 from selenium import webdriver
 
+
 @fixture
 def logged_in_session():
     session = Session()
@@ -25,6 +26,6 @@ def logged_in_session():
 
 @fixture
 def browser():
-    chrome_window = webdriver.Chrome()
-    yield chrome_window
-    chrome_window.close()
+    chrome = webdriver.Chrome()
+    yield chrome
+    chrome.quit()
